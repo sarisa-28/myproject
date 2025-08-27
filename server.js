@@ -18,10 +18,16 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const corsOptions = {
+    origin: 'https://register-exam.onrender.com',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+};
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -147,8 +153,7 @@ app.post('/api/register',
         email: req.body.email,
         examCenter: req.body.examCenter,
         subjects,
-        photoPath: `http://localhost:3000/uploads/${path.basename(req.file.path)}`
-
+        phone : `https://register-exam.onrender.com/uploads/${path.basename(req.file.path)}`
       });
 
       await doc.save();
