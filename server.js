@@ -17,17 +17,18 @@ console.log("MONGO_URI from .env =", process.env.MONGO_URI);
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
+const corsOptions = {
+    origin: 'https://register-exam.onrender.com',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+};
 
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const corsOptions = {
-    origin: 'https://register-exam.onrender.com',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
-};
+
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -153,7 +154,7 @@ app.post('/api/register',
         email: req.body.email,
         examCenter: req.body.examCenter,
         subjects,
-        phone : `https://register-exam.onrender.com/uploads/${path.basename(req.file.path)}`
+        photoPath: `https://register-exam.onrender.com/uploads/${path.basename(req.file.path)}`
       });
 
       await doc.save();
