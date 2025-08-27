@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ลงทะเบียนสอบ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>แบบฟอร์มลงทะเบียนการสอบวัดระดับความสามารถ</h1>
+    <h1>ทางด้านวิทยาศาสตร์และคณิตศาสตร์ระดับชาติ</h1>
+    <form id="regForm" enctype="multipart/form-data">
+      <div class="grid">
+        <label>รหัสประชาชน
+          <input type="text" name="citizenId" maxlength="13" placeholder="กรอก 13 หลัก" required>
+        </label>
+
+        <label>คำนำหน้าชื่อ
+          <select name="title" required>
+            <option value="">-- เลือก --</option>
+            <option>เด็กชาย</option>
+            <option>เด็กหญิง</option>
+            <option>นาย</option>
+            <option>นางสาว</option>
+            <option>นาง</option>
+          </select>
+        </label>
+
+        <label>ชื่อ
+          <input type="text" name="firstName" required>
+        </label>
+
+        <label>นามสกุล
+          <input type="text" name="lastName" required>
+        </label>
+
+        <label>วันเกิด
+          <input type="date" name="birthDate" required>
+        </label>
+
+        <label>ระดับชั้นการศึกษา
+          <select name="educationLevel" required>
+            <option value="">-- เลือก --</option>
+            <option>มัธยมศึกษาตอนต้น</option>
+            <option>มัธยมศึกษาตอนปลาย</option>
+            <option>ปวช.</option>
+            <option>ปวส.</option>
+            <option>อื่นๆ</option>
+          </select>
+        </label>
+
+        <label>โรงเรียน
+          <input type="text" name="school" required>
+        </label>
+
+        <label class="full">ที่อยู่
+          <textarea name="address" rows="3" required></textarea>
+        </label>
+
+        <label>เบอร์โทรศัพท์
+          <input type="tel" name="phone" placeholder="0xxxxxxxxx" required>
+        </label>
+
+        <label>Gmail
+          <input type="email" name="email" placeholder="example@gmail.com" required>
+        </label>
+
+        <label class="full">อัปโหลดภาพถ่าย (JPG/PNG/WEBP ไม่เกิน 5MB)
+          <input type="file" name="photo" accept="image/*" required>
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>เลือกรายวิชาที่จะสอบ</legend>
+        <div id="subjects" class="chips"></div>
+      </fieldset>
+
+      <label>สนามสอบ
+      <select name="examCenter" required>
+          <option value="">-- เลือกจังหวัด --</option>
+          <option>นครราชสีมา</option>
+          <option>สุรินทร์</option>
+          <option>บุรีรัมย์</option>
+          <option>ชัยภูมิ</option>
+      </select>
+      </label>
+
+      <button type="submit" class="primary">ส่งลงทะเบียน</button>
+      <p id="status" class="status"></p>
+    </form>
+  </div>
+
+  <script>
+    const subjectsContainer = document.getElementById('subjects');
+const statusEl = document.getElementById('status');
+const form = document.getElementById('regForm');
+
+// Load subjects
+fetch('/api/subjects')
+  .then(r => r.json())
+  .then(list => {
+    list.forEach(name => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      chip.textContent = name;
+      chip.dataset.value = name;
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+      });
+      subjectsContainer.appendChild(chip);
+    });
+  })
+  .catch(() => {
+    subjectsContainer.textContent = 'โหลดรายวิชาไม่สำเร็จ';
+  });
+
+function isValidThaiId(id){
+  if(!/^\d{13}$/.test(id)) return false;
+  let sum = 0;
+  for(let i=0;i<12;i++){
+    sum += parseInt(id[i],10) * (13 - i);
+  }
+  const check = (11 - (sum % 11)) % 10;
+  return check === parseInt(id[12],10);
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  statusEl.textContent = '';
+
+  const fd = new FormData(form);
+
+  // Collect selected subjects
+  const subjects = Array.from(document.querySelectorAll('.chip.active')).map(el => el.dataset.value);
+  if (subjects.length === 0) {
+    statusEl.textContent = 'กรุณาเลือกรายวิชาอย่างน้อย 1 วิชา';
+    return;
+  }
+  fd.append('subjects', JSON.stringify(subjects));
+
+  // Pre-check Thai ID
+  const id = fd.get('citizenId');
+  if(!isValidThaiId(id)){
+    statusEl.textContent = 'รหัสประชาชนไม่ถูกต้อง (ต้องเป็น 13 หลัก และผ่านการคำนวณตรวจสอบ)';
+    return;
+  }
+
+  // Simple phone check
+  const phone = fd.get('phone');
+  if(!/^0\d{8,9}$/.test(phone)){
+    statusEl.textContent = 'รูปแบบเบอร์โทรไม่ถูกต้อง';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (data && data.errors) {
+        statusEl.textContent = data.errors.map(e => e.msg).join('\n');
+      } else {
+        statusEl.textContent = data.error || 'ลงทะเบียนไม่สำเร็จ';
+      }
+      return;
+    }
+    statusEl.style.color = '#22d3ee';
+    statusEl.textContent = 'สำเร็จ: ' + data.message + ' (รหัส: ' + data.id + ')';
+    form.reset();
+    document.querySelectorAll('.chip.active').forEach(el => el.classList.remove('active'));
+  } catch (err) {
+    statusEl.textContent = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+  }
+});
+
+  </script>
+</body>
+</html>
