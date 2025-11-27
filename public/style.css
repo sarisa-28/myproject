@@ -9,7 +9,7 @@
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
-  background:linear-gradient(120deg,#0b1022,#0f172a);
+  background:linear-gradient(120deg,#ffffff,#ffffff);
   color:var(--text);
   min-height:100vh;
   display:flex;
@@ -31,6 +31,7 @@ h1{
   margin-top:0;
   text-align:center;
   letter-spacing:.5px;
+  color: #882323;
 }
 form{width:100%}
 .grid{
