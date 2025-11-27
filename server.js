@@ -147,7 +147,7 @@ app.post('/api/register',
         email: req.body.email,
         examCenter: req.body.examCenter,
         subjects,
-        photoPath: `https://myproject-8a5b.onrender.com/uploads/${path.basename(req.file.path)}`
+        photoPath: `/uploads/${path.basename(req.file.path)}`
       });
 
       await doc.save();
